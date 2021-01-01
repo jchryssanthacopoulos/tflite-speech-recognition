@@ -14,7 +14,7 @@ from tflite_runtime.interpreter import Interpreter
 
 # Parameters
 debug_time = 1
-debug_acc = 0
+debug_acc = 1
 led_pin = 8
 word_threshold = 0.5
 rec_duration = 0.5
@@ -24,6 +24,7 @@ resample_rate = 8000
 num_channels = 1
 num_mfcc = 16
 model_path = 'wake_word_stop_lite.tflite'
+cnt = 1
 
 # Sliding window
 window = np.zeros(int(rec_duration * resample_rate) * 2)
@@ -61,7 +62,6 @@ def decimate(signal, old_fs, new_fs):
 
 # This gets called every 0.5 seconds
 def sd_callback(rec, frames, time, status):
-
     GPIO.output(led_pin, GPIO.LOW)
 
     # Start timing for testing
@@ -80,6 +80,9 @@ def sd_callback(rec, frames, time, status):
     # Save recording onto sliding window
     window[:len(window)//2] = window[len(window)//2:]
     window[len(window)//2:] = rec
+
+    # np.save(f"recording_{cnt}.npy", window)
+    # import pdb; pdb.set_trace()
 
     # Compute features
     mfccs = python_speech_features.base.mfcc(window, 
@@ -106,15 +109,19 @@ def sd_callback(rec, frames, time, status):
         GPIO.output(led_pin, GPIO.HIGH)
 
     if debug_acc:
-        print(val)
+        print('val:', val)
     
     if debug_time:
         print(timeit.default_timer() - start)
+    
+    # cnt += 1
 
-# Start streaming from microphone
-with sd.InputStream(channels=num_channels,
-                    samplerate=sample_rate,
-                    blocksize=int(sample_rate * rec_duration),
-                    callback=sd_callback):
-    while True:
-        pass
+
+if __name__ == '__main__':
+    # Start streaming from microphone
+    with sd.InputStream(channels=num_channels,
+                        samplerate=sample_rate,
+                        blocksize=int(sample_rate * rec_duration),
+                        callback=sd_callback):
+        while True:
+            pass
