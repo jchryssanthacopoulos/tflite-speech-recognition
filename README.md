@@ -2,6 +2,8 @@
 
 ## Installation
 
+For both training and deployment, Python 3.7.9 is required. If you're using pyenv, the Python version will be set automatically by `.python-version`.
+
 ### Training
 
 Training usually involves a GPU desktop computer.
@@ -12,10 +14,7 @@ In a virtual environment, run
 pip install -r requirements_train.txt
 ```
 
-The installation was *only* tested with:
-
-1. Ubuntu 18.04.5 LTS (Bionic Beaver)
-2. Python 3.8.5 (see `.python-version`)
+The installation was *only* tested with Ubuntu 18.04.5 LTS (Bionic Beaver).
 
 I had to run the following command to get the dependencies to install:
 
@@ -33,13 +32,10 @@ In a virtual environment, run
 pip install -r requirements_deploy.txt
 ```
 
-The installation was *only* tested with:
-
-1. Raspberry Pi 3B+ running Bionic Beaver
-2. Python 3.8.5
+The installation was *only* tested with Raspberry Pi 3B+, again running Bionic Beaver.
 
 I had to run the following command to get the dependencies to install:
 
 ```bash
-sudo apt-get install libblas-dev gfortran libopenblas-base libatlas-base-dev
+sudo apt-get install libblas-dev gfortran libopenblas-base libatlas-base-dev libgfortran5
 ```
