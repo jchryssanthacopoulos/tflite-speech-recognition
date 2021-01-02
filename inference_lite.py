@@ -84,5 +84,8 @@ if __name__ == '__main__':
     sound_files = sorted(glob.glob(f"{directory}/*.wav"))
 
     for sound_file in sound_files:
-        score = get_model_score(model, input_details, output_details, sound_file)
-        print(f"Score on file {sound_file}: {score}")
+        try:
+            score = get_model_score(model, input_details, output_details, sound_file)
+            print(f"Score on file {sound_file}: {score}")
+        except ValueError:
+            pass
