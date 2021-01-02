@@ -4,9 +4,11 @@ Whenever you say "stop", the LED should flash briefly
 """
 
 import argparse
+import glob
 
 import sounddevice as sd
 import numpy as np
+from scipy.io import wavfile
 import scipy.signal
 import timeit
 import python_speech_features
@@ -87,10 +89,8 @@ def sd_callback(rec, frames, time, status, debug_mode):
     window[len(window)//2:] = rec
 
     if debug_mode:
-        import glob
-        from scipy.io import wavfile
-        cnt = 1
         recording_files = glob.glob('recording_*.wav')
+        cnt = 1
         if recording_files:
             cnt = max([int(f.strip('recording_').strip('.wav')) for f in recording_files]) + 1
         wavfile.write(f"recording_{cnt}.wav", resample_rate, window)

@@ -1,7 +1,7 @@
-sounddevice
-numpy
-python_speech_features
-RPi.GPIO
-scipy
+sounddevice==0.4.1
+numpy==1.19.4
+python_speech_features==0.6
+RPi.GPIO==0.7.0
+scipy==1.6.0
 # tensorflow lite interpreter for Python 3.7 / Linux ARM 32 device
 https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp37-cp37m-linux_armv7l.whl
