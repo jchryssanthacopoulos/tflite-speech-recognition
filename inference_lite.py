@@ -81,7 +81,7 @@ if __name__ == '__main__':
     model_name, directory = sys.argv[1], sys.argv[2]
 
     model, input_details, output_details = load_lite_model(model_name)
-    sound_files = glob.glob(f"{directory}/*.wav")
+    sound_files = sorted(glob.glob(f"{directory}/*.wav"))
 
     for sound_file in sound_files:
         score = get_model_score(model, input_details, output_details, sound_file)
