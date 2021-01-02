@@ -3,6 +3,8 @@ Connect a resistor and LED to board pin 8 and run this script.
 Whenever you say "stop", the LED should flash briefly
 """
 
+import argparse
+
 import sounddevice as sd
 import numpy as np
 import scipy.signal
@@ -11,6 +13,7 @@ import python_speech_features
 import RPi.GPIO as GPIO
 
 from tflite_runtime.interpreter import Interpreter
+
 
 # Parameters
 debug_time = 1
@@ -41,6 +44,7 @@ input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 print(input_details)
 
+
 # Decimate (filter and downsample)
 def decimate(signal, old_fs, new_fs):
     
@@ -60,8 +64,9 @@ def decimate(signal, old_fs, new_fs):
 
     return resampled_signal, new_fs
 
+
 # This gets called every 0.5 seconds
-def sd_callback(rec, frames, time, status):
+def sd_callback(rec, frames, time, status, debug_mode):
     GPIO.output(led_pin, GPIO.LOW)
 
     # Start timing for testing
@@ -81,8 +86,14 @@ def sd_callback(rec, frames, time, status):
     window[:len(window)//2] = window[len(window)//2:]
     window[len(window)//2:] = rec
 
-    # np.save(f"recording_{cnt}.npy", window)
-    # import pdb; pdb.set_trace()
+    if debug_mode:
+        import glob
+        from scipy.io import wavfile
+        cnt = 1
+        recording_files = glob.glob('recording_*.wav')
+        if recording_files:
+            cnt = max([int(f.strip('recording_').strip('.wav')) for f in recording_files]) + 1
+        wavfile.write(f"recording_{cnt}.wav", resample_rate, window)
 
     # Compute features
     mfccs = python_speech_features.base.mfcc(window, 
@@ -114,14 +125,17 @@ def sd_callback(rec, frames, time, status):
     if debug_time:
         print(timeit.default_timer() - start)
     
-    # cnt += 1
-
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Detect stop word')
+    parser.add_argument('--debug', action='store_true',
+        help='Save streaming audio streams as wav files')
+    arguments = parser.parse_args()
+
     # Start streaming from microphone
     with sd.InputStream(channels=num_channels,
                         samplerate=sample_rate,
                         blocksize=int(sample_rate * rec_duration),
-                        callback=sd_callback):
+                        callback=lambda x, y, z, t: sd_callback(x, y, z, t, arguments.debug)):
         while True:
             pass

@@ -35,12 +35,10 @@ def calc_mfcc(path):
     return mfccs.transpose()
 
 
-
 def get_model_score(model, sound_file):
     mfccs = calc_mfcc(sound_file)
     mfccs = mfccs.reshape((1, num_mfcc, num_mfcc, 1))
     return model.predict(mfccs)[0][0]
-
 
 
 if __name__ == '__main__':
