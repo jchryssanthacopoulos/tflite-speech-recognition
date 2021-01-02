@@ -19,9 +19,8 @@ from tflite_runtime.interpreter import Interpreter
 
 # Parameters
 led_pin = 8
-word_threshold = 0.5
+word_threshold = 0.3
 rec_duration = 0.5
-window_stride = 0.5
 sample_rate = 48000
 resample_rate = 8000
 num_channels = 1
