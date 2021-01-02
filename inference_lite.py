@@ -77,7 +77,7 @@ def load_lite_model(model_name):
 
 
 if __name__ == '__main__':
-    # Usage is: python inference.py <model_path> <sound_files_path>
+    # Usage is: python inference_lite.py <model_path> <sound_files_path>
     model_name, directory = sys.argv[1], sys.argv[2]
 
     model, input_details, output_details = load_lite_model(model_name)
