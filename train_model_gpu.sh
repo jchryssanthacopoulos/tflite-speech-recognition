@@ -10,10 +10,13 @@ docker exec dummy python train_model.py \
     -i all_targets_mfcc_sets.npz \
     -o wake_word_stop_model_marvin.h5 \
     -w marvin \
-    --require-gpu
+    --require-gpu \
+    --save-plots
 
-# copy file from created container (doesn't have to be running)
+# copy files from created container
 docker cp dummy:/tflite-speech-recognition/wake_word_stop_model_marvin.h5 .
+docker cp dummy:/tflite-speech-recognition/accuracy.png .
+docker cp dummy:/tflite-speech-recognition/loss.png .
 
 # stop and remove container
 docker container stop dummy

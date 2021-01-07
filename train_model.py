@@ -3,6 +3,7 @@
 import argparse
 import time
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
@@ -19,8 +20,8 @@ ALL_TARGETS = [
 def create_model(sample_shape):
     # Based on: https://www.geeksforgeeks.org/python-image-classification-using-keras/
     model = models.Sequential()
-    model.add(layers.Conv2D(32, 
-                            (2, 2), 
+    model.add(layers.Conv2D(32,
+                            (2, 2),
                             activation='relu',
                             input_shape=sample_shape))
     model.add(layers.MaxPooling2D(pool_size=(2, 2)))
@@ -49,36 +50,65 @@ def create_model(sample_shape):
 def transform_inputs(feature_sets):
     x_train = feature_sets['x_train']
     x_val = feature_sets['x_val']
+    x_test = feature_sets['x_test']
 
     x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], x_train.shape[2], 1)
     x_val = x_val.reshape(x_val.shape[0], x_val.shape[1], x_val.shape[2], 1)
+    x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], x_test.shape[2], 1)
 
     # CNN for TF expects (batch, height, width, channels)
     # So we reshape the input tensors with a "color" channel of 1
     print(x_train.shape)
     print(x_val.shape)
-    
-    return x_train, x_val
+    print(x_test.shape)
+
+    return x_train, x_val, x_test
 
 
 def transform_outputs(feature_sets, wake_word):
     # Assign feature sets
     y_train = feature_sets['y_train']
     y_val = feature_sets['y_val']
+    y_test = feature_sets['y_test']
 
     # Convert ground truth arrays to one wake word (1) and 'other' (0)
     wake_word_index = ALL_TARGETS.index(wake_word)
     y_train = np.equal(y_train, wake_word_index).astype('float64')
     y_val = np.equal(y_val, wake_word_index).astype('float64')
+    y_test = np.equal(y_test, wake_word_index).astype('float64')
 
     # Peek at labels after conversion
     print(y_val)
 
     # What percentage of wake word appears in validation labels
-    print(sum(y_val) / len(y_val))
-    print(1 - sum(y_val) / len(y_val))
+    print("Appearance percentage:", 100 * sum(y_val) / len(y_val))
 
-    return y_train, y_val
+    return y_train, y_val, y_test
+
+
+def save_performance_plots(history):
+    """Save plot of performance."""
+    acc = history.history['acc']
+    val_acc = history.history['val_acc']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(acc) + 1)
+    plt.figure()
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend()
+    plt.savefig("accuracy.png")
+    plt.close()
+
+    plt.figure()
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend()
+    plt.savefig("loss.png")
+    plt.close()
 
 
 if __name__ == '__main__':
@@ -88,6 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', type=str, help='Trained model file')
     parser.add_argument('-w', '--wake-word', choices=ALL_TARGETS, help='Wake word to train to detect')
     parser.add_argument('--require-gpu', action='store_true', help='Error out if GPU unavailable')
+    parser.add_argument('--save-plots', action='store_true', help='Whether to save performance plots')
     arguments = parser.parse_args()
 
     if arguments.require_gpu:
@@ -100,8 +131,8 @@ if __name__ == '__main__':
 
     # Get inputs and outputs
     feature_sets = np.load(arguments.input)
-    x_train, x_val = transform_inputs(feature_sets)
-    y_train, y_val = transform_outputs(feature_sets, arguments.wake_word)
+    x_train, x_val, x_test = transform_inputs(feature_sets)
+    y_train, y_val, y_test = transform_outputs(feature_sets, arguments.wake_word)
 
     # Create model
     sample_shape = x_train.shape[1:]
@@ -109,12 +140,20 @@ if __name__ == '__main__':
 
     # Train
     t0 = time.time()
-    history = model.fit(x_train, 
-                        y_train, 
-                        epochs=30, 
-                        batch_size=100, 
+    history = model.fit(x_train,
+                        y_train,
+                        epochs=30,
+                        batch_size=100,
                         validation_data=(x_val, y_val))
     print(f"Total train time: {time.time() - t0}")
 
+    # Plot results
+    if arguments.save_plots:
+        save_performance_plots(history)
+
     # Save the model as a file
     models.save_model(model, arguments.output)
+
+    # Evaluate model
+    loss, accuracy = model.evaluate(x=x_test, y=y_test)
+    print(f"Evaluation loss = {loss}, accuracy = {accuracy}")

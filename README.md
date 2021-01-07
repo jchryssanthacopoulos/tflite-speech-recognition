@@ -25,7 +25,7 @@ sudo apt-get install pkg-config libcairo2-dev gcc python3-dev libgirepository1.0
 ### Using Docker
 
 1. Install Docker, etc.
-2. Pull latest tensorflow GPU image: `docker pull tensorflow/tensorflow:latest-gpu`
+2. Pull latest tensorflow GPU image: `docker pull tensorflow/tensorflow:latest-gpu-jupyter`
 3. Build image on top of base: `docker build -t tflite-speech-recognition .`
 4. Run: `./train_model_gpu.sh` to train the model within a GPU-enabled container and return the model file back to host.
 
