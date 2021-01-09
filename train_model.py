@@ -9,14 +9,6 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 
 
-# Vocabulary
-ALL_TARGETS = [
-    'zero', 'four', 'three', 'right', 'cat', 'tree', 'happy', 'one', 'wow', 'up', 'down', 'house', 'marvin',
-    'two', 'yes', 'nine', 'bird', 'learn', 'sheila', 'dog', 'bed', 'eight', 'on', 'stop', 'left', 'forward',
-    'six', 'off', 'visual', 'five', 'backward', 'go', 'no', 'seven', 'follow'
-]
-
-
 def create_model(sample_shape):
     # Based on: https://www.geeksforgeeks.org/python-image-classification-using-keras/
     model = models.Sequential()
@@ -72,7 +64,7 @@ def transform_outputs(feature_sets, wake_word):
     y_test = feature_sets['y_test']
 
     # Convert ground truth arrays to one wake word (1) and 'other' (0)
-    wake_word_index = ALL_TARGETS.index(wake_word)
+    wake_word_index = list(feature_sets['target_words']).index(wake_word)
     y_train = np.equal(y_train, wake_word_index).astype('float64')
     y_val = np.equal(y_val, wake_word_index).astype('float64')
     y_test = np.equal(y_test, wake_word_index).astype('float64')
@@ -116,7 +108,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train tensorflow CNN model')
     parser.add_argument('-i', '--input', type=str, help='File of precomputed features')
     parser.add_argument('-o', '--output', type=str, help='Trained model file')
-    parser.add_argument('-w', '--wake-word', choices=ALL_TARGETS, help='Wake word to train to detect')
+    parser.add_argument('-w', '--wake-word', type=str, help='Wake word to train to detect')
     parser.add_argument('--require-gpu', action='store_true', help='Error out if GPU unavailable')
     parser.add_argument('--save-plots', action='store_true', help='Whether to save performance plots')
     arguments = parser.parse_args()
