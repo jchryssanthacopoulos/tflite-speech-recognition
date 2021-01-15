@@ -9,7 +9,7 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 
 
-def create_model(sample_shape):
+def create_model(sample_shape, num_wake_words):
     # Based on: https://www.geeksforgeeks.org/python-image-classification-using-keras/
     model = models.Sequential()
     model.add(layers.Conv2D(32,
@@ -28,13 +28,14 @@ def create_model(sample_shape):
     model.add(layers.Flatten())
     model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(1, activation='sigmoid'))
+    model.add(layers.Dense(1 + num_wake_words, activation='softmax'))
 
     # Display model
     model.summary()
 
     # Add training parameters to model
-    model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['acc'])
+    # model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
 
     return model
 
@@ -57,23 +58,42 @@ def transform_inputs(feature_sets):
     return x_train, x_val, x_test
 
 
-def transform_outputs(feature_sets, wake_word):
+def transform_outputs(feature_sets, wake_words):
+    """Transform outputs.
+
+    Args:
+        feature_sets (dict): Dictionary of input features
+        wake_words (list): List of wake words to detect
+    
+    Returns:
+        Train, validation, and test outputs
+    
+    """
     # Assign feature sets
     y_train = feature_sets['y_train']
     y_val = feature_sets['y_val']
     y_test = feature_sets['y_test']
 
-    # Convert ground truth arrays to one wake word (1) and 'other' (0)
-    wake_word_index = list(feature_sets['target_words']).index(wake_word)
-    y_train = np.equal(y_train, wake_word_index).astype('float64')
-    y_val = np.equal(y_val, wake_word_index).astype('float64')
-    y_test = np.equal(y_test, wake_word_index).astype('float64')
+    target_words = list(feature_sets['target_words'])
+
+    def _convert_to_categorical(y):
+        from tensorflow.keras.utils import to_categorical
+        y_new = np.zeros(len(y))
+        for idx, wake_word in enumerate(wake_words):
+            wake_word_index = target_words.index(wake_word)
+            y_new[y == wake_word_index] = idx + 1
+        y_new = to_categorical(y_new)
+        return y_new
+
+    y_train = _convert_to_categorical(y_train)
+    y_val = _convert_to_categorical(y_val)
+    y_test = _convert_to_categorical(y_test)
 
     # Peek at labels after conversion
     print(y_val)
 
     # What percentage of wake word appears in validation labels
-    print("Appearance percentage:", 100 * sum(y_val) / len(y_val))
+    print("Appearance percentage:", 100 * y_val.sum(axis=0) / y_val.sum())
 
     return y_train, y_val, y_test
 
@@ -108,7 +128,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train tensorflow CNN model')
     parser.add_argument('-i', '--input', type=str, help='File of precomputed features')
     parser.add_argument('-o', '--output', type=str, help='Trained model file')
-    parser.add_argument('-w', '--wake-word', type=str, help='Wake word to train to detect')
+    parser.add_argument('-w', '--wake-words', type=str, help='Comma-separated list of wake words to train to detect')
     parser.add_argument('--require-gpu', action='store_true', help='Error out if GPU unavailable')
     parser.add_argument('--save-plots', action='store_true', help='Whether to save performance plots')
     arguments = parser.parse_args()
@@ -120,15 +140,18 @@ if __name__ == '__main__':
             tf.config.experimental.set_memory_growth(physical_devices[0], True)
         else:
             raise Exception("No GPU available")
+    
+    wake_words = arguments.wake_words.split(",")
+    num_wake_words = len(wake_words)
 
     # Get inputs and outputs
     feature_sets = np.load(arguments.input)
     x_train, x_val, x_test = transform_inputs(feature_sets)
-    y_train, y_val, y_test = transform_outputs(feature_sets, arguments.wake_word)
+    y_train, y_val, y_test = transform_outputs(feature_sets, wake_words)
 
     # Create model
     sample_shape = x_train.shape[1:]
-    model = create_model(sample_shape)
+    model = create_model(sample_shape, num_wake_words)
 
     # Train
     t0 = time.time()

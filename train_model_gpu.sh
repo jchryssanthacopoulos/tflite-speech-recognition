@@ -8,13 +8,13 @@ docker container start dummy
 # train
 docker exec dummy python train_model.py \
     -i all_targets_mfcc_sets.npz \
-    -o wake_word_stop_model_bella.h5 \
-    -w bella \
+    -o multi_word_model.h5 \
+    -w stop,go \
     --require-gpu \
     --save-plots
 
 # copy files from created container
-docker cp dummy:/tflite-speech-recognition/wake_word_stop_model_bella.h5 .
+docker cp dummy:/tflite-speech-recognition/multi_word_model.h5 .
 docker cp dummy:/tflite-speech-recognition/accuracy.png .
 docker cp dummy:/tflite-speech-recognition/loss.png .
 
