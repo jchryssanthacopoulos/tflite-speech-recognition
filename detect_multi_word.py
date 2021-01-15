@@ -18,7 +18,8 @@ from tflite_runtime.interpreter import Interpreter
 
 
 # Parameters
-led_pin = 10
+led_pin_stop = 8
+led_pin_go = 10 
 word_threshold = 0.3
 rec_duration = 0.5
 sample_rate = 48000
@@ -33,7 +34,11 @@ window = np.zeros(int(rec_duration * resample_rate) * 2)
 # GPIO 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
-GPIO.setup(led_pin, GPIO.OUT, initial=GPIO.LOW)
+
+# start in "stop" state
+GPIO.setup(led_pin_stop, GPIO.OUT, initial=GPIO.HIGH)
+GPIO.setup(led_pin_go, GPIO.OUT, initial=GPIO.LOW)
+state = 'stop'
 
 
 # Decimate (filter and downsample)
@@ -57,7 +62,7 @@ def decimate(signal, old_fs, new_fs):
 
 # This gets called every 0.5 seconds
 def sd_callback(rec, frames, time, status, interpreter, input_details, output_details, save_stream, debug_mode):
-    GPIO.output(led_pin, GPIO.LOW)
+    global state
 
     # Start timing for testing
     start = timeit.default_timer()
@@ -102,11 +107,22 @@ def sd_callback(rec, frames, time, status, interpreter, input_details, output_de
     interpreter.set_tensor(input_details[0]['index'], in_tensor)
     interpreter.invoke()
     output_data = interpreter.get_tensor(output_details[0]['index'])
-    val = output_data[0][0]
+    val = output_data[0] #[0]
 
-    if val > word_threshold:
+    if val[1] > word_threshold and state != 'stop':
+        # stop
+        # turn off green, turn on red
         print('stop')
-        GPIO.output(led_pin, GPIO.HIGH)
+        state = 'stop'
+        GPIO.output(led_pin_stop, GPIO.HIGH)
+        GPIO.output(led_pin_go, GPIO.LOW)
+    if val[2] > word_threshold and state != 'go':
+        # go
+        # turn off red, turn on green
+        print('go')
+        state = 'go'
+        GPIO.output(led_pin_stop, GPIO.LOW)
+        GPIO.output(led_pin_go, GPIO.HIGH)
 
     if debug_mode:
         print('Prediction:', val)
