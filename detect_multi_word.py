@@ -1,25 +1,19 @@
-"""
-Connect a resistor and LED to board pin 8 and run this script.
-Whenever you say "stop", the LED should flash briefly
-"""
+"""Connect a resistor and LED to each indicated pin and light them using commands."""
 
 import argparse
 import glob
 
-import sounddevice as sd
 import numpy as np
+import python_speech_features
+import RPi.GPIO as GPIO
+import sounddevice as sd
 from scipy.io import wavfile
 import scipy.signal
 import timeit
-import python_speech_features
-import RPi.GPIO as GPIO
-
 from tflite_runtime.interpreter import Interpreter
 
 
 # Parameters
-led_pin_stop = 8
-led_pin_go = 10 
 word_threshold = 0.3
 rec_duration = 0.5
 sample_rate = 48000
@@ -34,11 +28,6 @@ window = np.zeros(int(rec_duration * resample_rate) * 2)
 # GPIO 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
-
-# start in "stop" state
-GPIO.setup(led_pin_stop, GPIO.OUT, initial=GPIO.HIGH)
-GPIO.setup(led_pin_go, GPIO.OUT, initial=GPIO.LOW)
-state = 'stop'
 
 
 # Decimate (filter and downsample)
@@ -63,6 +52,8 @@ def decimate(signal, old_fs, new_fs):
 # This gets called every 0.5 seconds
 def sd_callback(rec, frames, time, status, interpreter, input_details, output_details, save_stream, debug_mode):
     global state
+    global detect_words
+    global detect_pins
 
     # Start timing for testing
     start = timeit.default_timer()
@@ -107,34 +98,48 @@ def sd_callback(rec, frames, time, status, interpreter, input_details, output_de
     interpreter.set_tensor(input_details[0]['index'], in_tensor)
     interpreter.invoke()
     output_data = interpreter.get_tensor(output_details[0]['index'])
-    val = output_data[0] #[0]
 
-    if val[1] > word_threshold and state != 'stop':
-        # stop
-        # turn off green, turn on red
-        print('stop')
-        state = 'stop'
-        GPIO.output(led_pin_stop, GPIO.HIGH)
-        GPIO.output(led_pin_go, GPIO.LOW)
-    if val[2] > word_threshold and state != 'go':
-        # go
-        # turn off red, turn on green
-        print('go')
-        state = 'go'
-        GPIO.output(led_pin_stop, GPIO.LOW)
-        GPIO.output(led_pin_go, GPIO.HIGH)
+    # take all elements after the first (first element = "all other words")
+    val = output_data[0][1:]
+
+    max_idx = val.argmax()
+    if val[max_idx] >= word_threshold:
+        detected_word = detect_words[max_idx]
+        print(detected_word)
+
+        if state != detected_word:
+            state = detected_word
+            for idx, pin in enumerate(detect_pins):
+                if idx == max_idx:
+                    GPIO.output(pin, GPIO.HIGH)
+                else:
+                    GPIO.output(pin, GPIO.LOW)
 
     if debug_mode:
         print('Prediction:', val)
         print('Inference time:', timeit.default_timer() - start)
-    
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Detect stop word')
     parser.add_argument('-i', '--input', type=str, help='Name of model file')
+    parser.add_argument('-w', '--words', type=str, help='Comma-separated list of words to detect')
+    parser.add_argument('-p', '--pins', type=str, help='Comma-separated list of GPIO pins to show detected words')
     parser.add_argument('--save-stream', action='store_true', help='Save streaming audio streams as wav files')
     parser.add_argument('--debug', action='store_true', help='Whether to print debug information')
     arguments = parser.parse_args()
+
+    # start in "stop" state
+    detect_words = arguments.words.split(",")
+    detect_pins = arguments.pins.split(",")
+
+    # set first pin high and others low
+    GPIO.setup(detect_pins[0], GPIO.OUT, initial=GPIO.HIGH)
+    for pin in detect_pins[1:]:
+        GPIO.setup(pin, GPIO.OUT, initial=GPIO.LOW)
+
+    # set state to first word
+    state = detect_words[0]
 
     # load model
     interpreter = Interpreter(arguments.input)
