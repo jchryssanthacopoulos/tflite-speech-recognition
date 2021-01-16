@@ -14,7 +14,6 @@ from tflite_runtime.interpreter import Interpreter
 
 
 # Parameters
-word_threshold = 0.3
 rec_duration = 0.5
 sample_rate = 48000
 resample_rate = 8000
@@ -54,6 +53,7 @@ def sd_callback(rec, frames, time, status, interpreter, input_details, output_de
     global state
     global detect_words
     global detect_pins
+    global word_threshold
 
     # Start timing for testing
     start = timeit.default_timer()
@@ -105,7 +105,7 @@ def sd_callback(rec, frames, time, status, interpreter, input_details, output_de
     max_idx = val.argmax()
     if val[max_idx] >= word_threshold:
         detected_word = detect_words[max_idx]
-        print(detected_word)
+        print(f"Detected: {detected_word}")
 
         if state != detected_word:
             state = detected_word
@@ -122,16 +122,19 @@ def sd_callback(rec, frames, time, status, interpreter, input_details, output_de
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Detect stop word')
-    parser.add_argument('-i', '--input', type=str, help='Name of model file')
-    parser.add_argument('-w', '--words', type=str, help='Comma-separated list of words to detect')
-    parser.add_argument('-p', '--pins', type=str, help='Comma-separated list of GPIO pins to show detected words')
+    parser.add_argument('-i', '--input', type=str, required=True, help='Name of model file')
+    parser.add_argument('-w', '--words', type=str, required=True, help='Comma-separated list of words to detect')
+    parser.add_argument('-p', '--pins', type=str, required=True, help='Comma-separated list of GPIO pins to show detected words')
+    parser.add_argument('-t', '--threshold', type=float, default=0.3, help='Threshold above which to consider word detected')
     parser.add_argument('--save-stream', action='store_true', help='Save streaming audio streams as wav files')
     parser.add_argument('--debug', action='store_true', help='Whether to print debug information')
     arguments = parser.parse_args()
 
-    # start in "stop" state
+    # start in state corresponding to first word
     detect_words = arguments.words.split(",")
-    detect_pins = arguments.pins.split(",")
+    detect_pins = [int(pin) for pin in arguments.pins.split(",")]
+
+    word_threshold = arguments.threshold
 
     # set first pin high and others low
     GPIO.setup(detect_pins[0], GPIO.OUT, initial=GPIO.HIGH)

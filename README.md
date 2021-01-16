@@ -52,8 +52,10 @@ pip install -r requirements_deploy.txt
 2. Run the script to detect words:
 
 ```bash
-python detect_multi_word.py -i <MODEL_LITE_FILE>
+python detect_multi_word.py -i <MODEL_LITE_FILE> -w <DETECT_WORDS> -p <GPIO_PINS> -t <THRESHOLD>
 ```
+
+The argument `GPIO_PINS` is a comma-separated list of pins to pull high when the corresponding word is detected above a confidence of `THRESHOLD`.
 
 This program was *only* tested with Raspberry Pi 3B+, again running Bionic Beaver.
 
