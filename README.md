@@ -16,10 +16,10 @@ pip install -r requirements_train.txt
 
 2. Copy `.env.sample` to `.env`, then fill out.
 
-3. Pull the latest Tensorflow GPU image:
+3. Pull the latest image of Tensorflow GPU with Jupyter:
 
 ```bash
-: `docker pull tensorflow/tensorflow:latest-gpu-jupyter`
+docker pull tensorflow/tensorflow:latest-gpu-jupyter
 ```
 
 4. Run the script to extract audio features, and train and save the Tensorflow Lite model:
@@ -28,6 +28,8 @@ pip install -r requirements_train.txt
 chmod o+x train.sh
 ./train.sh
 ```
+
+You should see `MODEL_LITE_FILE` in your directory.
 
 This program was *only* tested with Ubuntu 18.04.5 LTS (Bionic Beaver).
 
@@ -50,10 +52,8 @@ pip install -r requirements_deploy.txt
 2. Run the script to detect words:
 
 ```bash
-python detect_multi_word.py -i <model_lite_file>
+python detect_multi_word.py -i <MODEL_LITE_FILE>
 ```
-
-where `model_lite_file` is the trained model.
 
 This program was *only* tested with Raspberry Pi 3B+, again running Bionic Beaver.
 
