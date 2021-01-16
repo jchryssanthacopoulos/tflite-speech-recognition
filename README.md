@@ -6,15 +6,30 @@ For both training and deployment, Python 3.7.9 is required. If you're using pyen
 
 ### Training
 
-Training usually involves a GPU desktop computer.
+Training usually involves a GPU desktop computer using Docker.
 
-In a virtual environment, run
+1. In a virtual environment, run
 
 ```bash
 pip install -r requirements_train.txt
 ```
 
-The installation was *only* tested with Ubuntu 18.04.5 LTS (Bionic Beaver).
+2. Copy `.env.sample` to `.env`, then fill out.
+
+3. Pull the latest Tensorflow GPU image:
+
+```bash
+: `docker pull tensorflow/tensorflow:latest-gpu-jupyter`
+```
+
+4. Run the script to extract audio features, and train and save the Tensorflow Lite model:
+
+```bash
+chmod o+x train.sh
+./train.sh
+```
+
+This program was *only* tested with Ubuntu 18.04.5 LTS (Bionic Beaver).
 
 I had to run the following command to get the dependencies to install:
 
@@ -22,24 +37,25 @@ I had to run the following command to get the dependencies to install:
 sudo apt-get install pkg-config libcairo2-dev gcc python3-dev libgirepository1.0-dev
 ```
 
-### Using Docker
-
-1. Install Docker, etc.
-2. Pull latest tensorflow GPU image: `docker pull tensorflow/tensorflow:latest-gpu-jupyter`
-3. Build image on top of base: `docker build -t tflite-speech-recognition .`
-4. Run: `./train_model_gpu.sh` to train the model within a GPU-enabled container and return the model file back to host.
-
 ### Deploy
 
 Deployment usually involves a single-board computer like the Raspberry Pi.
 
-In a virtual environment, run
+1. In a virtual environment, run
 
 ```bash
 pip install -r requirements_deploy.txt
 ```
 
-The installation was *only* tested with Raspberry Pi 3B+, again running Bionic Beaver.
+2. Run the script to detect words:
+
+```bash
+python detect_multi_word.py -i <model_lite_file>
+```
+
+where `model_lite_file` is the trained model.
+
+This program was *only* tested with Raspberry Pi 3B+, again running Bionic Beaver.
 
 I had to run the following command to get the dependencies to install:
 

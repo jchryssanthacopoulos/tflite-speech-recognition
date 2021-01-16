@@ -22,7 +22,8 @@ def get_filenames_and_targets(dataset_path):
     y = []
     for index, word in enumerate(vocab_words):
         print(join(dataset_path, word))
-        files = [join(dataset_path, word, file) for file in files]
+        files = listdir(join(dataset_path, word))
+        files = [join(dataset_path, word, filename) for filename in files]
         print(f"Adding {len(files)} samples")
         filenames.append(files)
         y.append(np.ones(len(filenames[index])) * index)
@@ -58,7 +59,7 @@ def calc_mfcc(filename, num_mfcc, sample_rate):
 
 
 # Function: Create MFCCs, keeping only ones of desired length
-def extract_features(in_files, in_y, num_mfcc, len_mfcc, sample_rate):
+def extract_features(in_files, in_y, num_mfccs, len_mfcc, sample_rate):
     prob_cnt = 0
     out_x = []
     out_y = []
@@ -69,7 +70,7 @@ def extract_features(in_files, in_y, num_mfcc, len_mfcc, sample_rate):
             continue
 
         # Create MFCCs
-        mfccs = calc_mfcc(filename, num_mfcc, sample_rate)
+        mfccs = calc_mfcc(filename, num_mfccs, sample_rate)
 
         # Only keep MFCCs with given length
         if mfccs.shape[1] == len_mfcc:
@@ -118,7 +119,7 @@ if __name__ == '__main__':
     vocab_words, filenames, outputs = get_filenames_and_targets(arguments.input)
 
     x, y, prob = extract_features(
-        filenames, outputs, arguments.num_mfcc, arguments.dim_mfcc, arguments.sample_rate
+        filenames, outputs, arguments.num_mfccs, arguments.dim_mfcc, arguments.sample_rate
     )
     print('Removed percentage:', prob / len(outputs))
 

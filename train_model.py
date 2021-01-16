@@ -34,7 +34,6 @@ def create_model(sample_shape, num_wake_words):
     model.summary()
 
     # Add training parameters to model
-    # model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['acc'])
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
 
     return model
